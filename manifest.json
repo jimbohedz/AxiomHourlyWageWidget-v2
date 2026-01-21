@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "$WAGE Tracker",
+  "version": "2.0.0",
+  "description": "Track your hourly wage on Axiom",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "icons": {
+    "48": "icons/icon48.png"
+  },
+  "action": {
+    "default_icon": {
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "*://axiom.trade/*",
+    "*://*.axiom.trade/*",
+    "https://api.openai.com/*",
+    "https://api.mainnet-beta.solana.com/*",
+    "https://*.alchemy.com/*",
+    "https://rpc.ankr.com/*",
+    "https://api.solscan.io/*",
+    "https://api.helius.xyz/*",
+    "https://*.workers.dev/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://axiom.trade/*", "*://*.axiom.trade/*"],
+      "js": ["wallet-bridge.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://axiom.trade/*", "*://*.axiom.trade/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

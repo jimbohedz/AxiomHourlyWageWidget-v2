@@ -1,0 +1,21 @@
+# System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node Modules (if you ever use npm install)
+node_modules/
+
+# Environment Variables (Keep your secrets secret!)
+.env
+.dev.vars
+
+# Editor Directories
+.vscode/
+.idea/
