@@ -1,6 +1,6 @@
 // Axiom Hourly Wage Widget - Content Script (v2 - Free Version)
 // Features controlled by remote config from Cloudflare Worker
-(function() {
+(function () {
   'use strict';
 
   // Remote config (loaded from Cloudflare Worker)
@@ -289,7 +289,7 @@
     if (debugLog.length > MAX_DEBUG_LINES) {
       debugLog.shift();
     }
-    console.log('[AxiomWage]', msg);
+    // console.log('[AxiomWage]', msg);
   }
 
   // ============================================
@@ -420,7 +420,7 @@
       return true;
     } catch (err) {
       debug(`Failed to start speech recognition: ${err.message}`);
-      console.error('Speech recognition error:', err);
+      // console.error('Speech recognition error:', err);
       return false;
     }
   }
@@ -525,7 +525,7 @@
           });
         }
       } catch (e) {
-        console.warn('Error parsing trade row:', e);
+        // console.warn('Error parsing trade row:', e);
       }
     });
 
@@ -995,14 +995,13 @@ Keep it SHORT. No generic advice. Only use details they actually mentioned.`;
     const vibeEmoji = emojiMatch ? emojiMatch[0] : '💰';
     const vibeTextClean = vibeText.replace(/[\p{Emoji}]+$/u, '').trim();
 
+    // TODO: Update @WageTracker to community handle when ready
     const tweetText = `${vibeEmoji} ${vibeTextClean} ${vibeEmoji}
 
-${dateStr}
 Session: ${profitText}
 Hourly: ${hourlyText}
-Today: ${formatCurrency(todayProfit)}
 
-Tracking my $WAGE with @WageTracker`;
+Tracking my $WAGE 💰`;
 
     // Open Twitter/X share dialog
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
@@ -1096,8 +1095,8 @@ Tracking my $WAGE with @WageTracker`;
         tradesHtml = `
           <div class="journal-trades">
             ${entry.scrapedTrades.map(t =>
-              `<div class="scraped-trade ${t.type}">${t.type.toUpperCase()} ${t.amount} @ ${t.price}</div>`
-            ).join('')}
+          `<div class="scraped-trade ${t.type}">${t.type.toUpperCase()} ${t.amount} @ ${t.price}</div>`
+        ).join('')}
           </div>
         `;
       }
@@ -1222,7 +1221,7 @@ Tracking my $WAGE with @WageTracker`;
             const tradesProfit = state.sessionTrades.reduce((sum, t) => sum + t.profit, 0);
             debug(`sessionTrades total profit: $${tradesProfit.toFixed(2)}`);
             state.sessionTrades.forEach((t, i) => {
-              debug(`  Trade ${i+1}: ${t.tokenName} = $${t.profit.toFixed(2)}`);
+              debug(`  Trade ${i + 1}: ${t.tokenName} = $${t.profit.toFixed(2)}`);
             });
           }
 
@@ -2638,8 +2637,10 @@ Tracking my $WAGE with @WageTracker`;
 
       // Check if this is the same token we're tracking
       if (state.currentTokenId === currentTokenId) {
-        // Same token - update last known PNL and check if still holding
-        state.currentTokenLastPNL = currentPNL;
+        // Same token - check if still holding
+        // IMPORTANT: Don't update lastPNL yet - we need the previous value for sanity checks
+        // if position just closed (Axiom can show glitched values during sell)
+        const previousLastPNL = state.currentTokenLastPNL;
 
         // Handle PNL stabilization period (first 3 seconds after detecting position)
         // This prevents false profits when Axiom loads old historical PnL values
@@ -2659,7 +2660,7 @@ Tracking my $WAGE with @WageTracker`;
             state.pnlStabilizing = false;
             state.currentTokenStartPNL = currentPNL; // Final lock-in at current value
             state.currentTokenStartTime = now; // Reset start time to now
-            debug(`STABILIZED: Locked startPNL=${currentPNL} for ${state.currentTokenName} after ${(stabilizationElapsed/1000).toFixed(1)}s`);
+            debug(`STABILIZED: Locked startPNL=${currentPNL} for ${state.currentTokenName} after ${(stabilizationElapsed / 1000).toFixed(1)}s`);
             statusText.textContent = `Tracking ${state.currentTokenName}`;
             saveState();
           } else {
@@ -2679,7 +2680,10 @@ Tracking my $WAGE with @WageTracker`;
         }
 
         if (hasPosition) {
-          // Still holding - update display
+          // Still holding - NOW we can safely update lastPNL
+          state.currentTokenLastPNL = currentPNL;
+
+          // Update display
           const currentProfit = currentPNL - state.currentTokenStartPNL;
           const completedProfit = state.sessionTrades.reduce((sum, t) => sum + t.profit, 0);
           const totalProfit = completedProfit + currentProfit;
@@ -2726,14 +2730,15 @@ Tracking my $WAGE with @WageTracker`;
             return;
           }
 
-          // IMPORTANT: Use lastKnownPNL instead of currentPNL because Axiom's UI
+          // IMPORTANT: Use previousLastPNL (captured BEFORE this update cycle) because Axiom's UI
           // can show corrupted values during the sell transaction
-          const lastStablePNL = state.currentTokenLastPNL !== null ? state.currentTokenLastPNL : currentPNL;
+          // previousLastPNL is the last known good value from when we were still holding
+          const lastStablePNL = previousLastPNL !== null ? previousLastPNL : currentPNL;
 
-          // Sanity check: if the PNL jumped more than $10 from last known, something is wrong
-          // Use the last known stable value instead
+          // Sanity check: if the PNL jumped more than $3 from last known, something is wrong
+          // Use the last known stable value instead (lowered from $10 to catch more glitches)
           let finalPNL = currentPNL;
-          if (Math.abs(currentPNL - lastStablePNL) > 10) {
+          if (Math.abs(currentPNL - lastStablePNL) > 3) {
             debug(`WARNING: PNL jumped from ${lastStablePNL} to ${currentPNL} - using last stable value`);
             finalPNL = lastStablePNL;
           }
@@ -3127,8 +3132,8 @@ Tracking my $WAGE with @WageTracker`;
     for (const div of allDivs) {
       // Check if this is the 100% sell button
       if (div.textContent.trim() === '100%' &&
-          div.classList.contains('text-decrease') &&
-          div.classList.contains('cursor-pointer')) {
+        div.classList.contains('text-decrease') &&
+        div.classList.contains('cursor-pointer')) {
         debug('AUTO-SELL: Found 100% sell button, clicking...');
         div.click();
         return true;
@@ -3201,7 +3206,7 @@ Tracking my $WAGE with @WageTracker`;
       if (cashOutAudioCtx) {
         try {
           cashOutAudioCtx.close();
-        } catch (e) {}
+        } catch (e) { }
         cashOutAudioCtx = null;
       }
       notification.classList.remove('show');
@@ -3313,12 +3318,12 @@ Tracking my $WAGE with @WageTracker`;
         tradesHtml = `
           <div class="history-trades">
             ${session.trades.map(trade => {
-              const tProfitClass = trade.profit >= 0 ? 'profit-positive' : 'profit-negative';
-              return `<div class="history-trade-item">
+          const tProfitClass = trade.profit >= 0 ? 'profit-positive' : 'profit-negative';
+          return `<div class="history-trade-item">
                 <span class="trade-token">${trade.tokenName}</span>
                 <span class="${tProfitClass}">${formatCurrency(trade.profit)}</span>
               </div>`;
-            }).join('')}
+        }).join('')}
           </div>
         `;
       }
