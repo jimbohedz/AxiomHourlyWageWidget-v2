@@ -996,15 +996,11 @@ Keep it SHORT. No generic advice. Only use details they actually mentioned.`;
     const vibeTextClean = vibeText.replace(/[\p{Emoji}]+$/u, '').trim();
 
     // TODO: Update @WageTracker to community handle when ready
-    const tweetText = `${vibeEmoji} ${vibeTextClean} ${vibeEmoji}
-
-Session: ${profitText}
-Hourly: ${hourlyText}
-
-Tracking my $WAGE 💰`;
+    const tweetText = `${vibeEmoji} ${vibeTextClean} ${vibeEmoji}\n\nSession: ${profitText}\nHourly: ${hourlyText}\n\nTracking my $WAGE 💰`;
+    const communityLink = 'https://x.com/i/communities/2014053192481280226/';
 
     // Open Twitter/X share dialog
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(communityLink)}`;
     window.open(tweetUrl, '_blank', 'width=550,height=420');
 
     debug('FLEX posted to X!');
